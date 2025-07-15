@@ -4,7 +4,9 @@ services:
     env: python
     plan: free
     buildCommand: |
+      pip install gunicorn
       pip install -r requirements.txt
+      which gunicorn
       python manage.py collectstatic --noinput
       python manage.py makemigrations
       python manage.py migrate
@@ -21,7 +23,7 @@ services:
       - key: EMAIL_HOST_USER
         value: "ririnouke34@gmail.com"
       - key: EMAIL_HOST_PASSWORD
-        value: "yjsq cweq tlgu ryih"  # 🔐 Replace this with your real Gmail app password
+        value: "yjsq cweq tlgu ryih"
       - key: ADMIN_EMAIL
         value: "ririnouke34@gmail.com"
 
