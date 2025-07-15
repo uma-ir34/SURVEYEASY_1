@@ -11,6 +11,7 @@ services:
       python manage.py makemigrations
       python manage.py migrate
     startCommand: /opt/render/project/src/.venv/bin/gunicorn surveyeasy.wsgi:application
+
     envVars:
       - key: DEBUG
         value: "False"
