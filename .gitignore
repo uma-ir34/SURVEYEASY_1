@@ -1,15 +1,30 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Django
+*.sqlite3
+db.sqlite3
 
 # Environment
 .env
 
-# SQLite
-*.sqlite3
-
-# Static files
+# Static and media files
 staticfiles/
+media/
 
-# Other
+# Logs
 *.log
+
+# Mac-specific
+.DS_Store
+
+# VS Code and PyCharm settings (optional)
+.vscode/
+.idea/
