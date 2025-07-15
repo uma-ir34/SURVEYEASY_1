@@ -11,3 +11,4 @@ scikit-learn
 matplotlib
 seaborn
 opencv-python-headless
+reportlab==4.1.0
