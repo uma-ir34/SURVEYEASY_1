@@ -10,7 +10,7 @@ services:
       python manage.py collectstatic --noinput
       python manage.py makemigrations
       python manage.py migrate
-    startCommand: gunicorn surveyeasy.wsgi:application
+    startCommand: /opt/render/project/src/.venv/bin/gunicorn surveyeasy.wsgi:application
     envVars:
       - key: DEBUG
         value: "False"
