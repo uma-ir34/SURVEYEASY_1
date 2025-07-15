@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: Survey_Easy
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py makemigrations
+      python manage.py migrate
+    startCommand: python -m gunicorn surveyeasy.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: surveyeasy-db
+          property: connectionString
+      - key: EMAIL_HOST_USER
+        value: "ririnouke34@gmail.com"
+      - key: EMAIL_HOST_PASSWORD
+        value: "yjsq cweq tlgu ryih"  # 🔐 Replace this with your real Gmail app password
+      - key: ADMIN_EMAIL
+        value: "ririnouke34@gmail.com"
+
+databases:
+  - name: surveyeasy-db
+    plan: free
+    databaseName: surveyeasy
+    user: surveyeasy_user
