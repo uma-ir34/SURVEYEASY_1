@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+  <h3 class="mb-4">📚 Saved Surveys</h3>
+
+  <!-- ✅ Back button: Admin → Admin Dashboard, Assessor → Assessor Dashboard -->
+  {% if user.groups.all.0.name == "Admin" %}
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-3">⬅️ Back to Dashboard</a>
+  {% elif user.groups.all.0.name == "Assessor" %}
+    <a href="{% url 'assessor_dashboard' %}" class="btn btn-secondary mb-3">⬅️ Back to Dashboard</a>
+  {% endif %}
+
+  <a href="{% url 'create_survey' %}" class="btn btn-primary mb-3 float-end">➕ Create New Survey</a>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in surveys %}
+        <tr>
+          <td>{{ s.title }}</td>
+          <td>{{ s.description|default:"—" }}</td>
+          <td>
+  <div class="btn-group" role="group">
+    <a href="{% url 'add_questions' s.id %}" class="btn btn-sm btn-secondary">➕ Add/Edit Questions</a>
+    <a href="{% url 'edit_survey' s.id %}" class="btn btn-sm btn-warning">✏️ Edit</a>
+    <a href="{% url 'dynamic_survey' %}?survey_id={{ s.id }}" class="btn btn-sm btn-success">▶️ Fill Survey</a>
+    <a href="{% url 'response_list' s.id %}" class="btn btn-sm btn-info">📄 View Responses</a>
+    <a href="{% url 'delete_survey' s.id %}" class="btn btn-sm btn-danger"
+       onclick="return confirm('Are you sure you want to delete this survey?');">
+      🗑️ Delete
+    </a>
+  </div>
+</td>
+
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center">No surveys yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

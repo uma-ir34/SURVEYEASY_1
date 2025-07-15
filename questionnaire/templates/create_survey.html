@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="mb-4">Create or Continue Survey</h2>
+  {% if user.groups.all.0.name == "Admin" %}
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-3">⬅️ Back to Dashboard</a>
+{% elif user.groups.all.0.name == "Assessor" %}
+  <a href="{% url 'assessor_dashboard' %}" class="btn btn-secondary mb-3">⬅️ Back to Dashboard</a>
+{% endif %}
+
+
+  {% if active_survey %}
+    <div class="card p-4 mb-4 shadow-sm">
+      <h4>Current Active Survey</h4>
+      <p><strong>Title:</strong> {{ active_survey.title }}</p>
+      <p><strong>Description:</strong> {{ active_survey.description }}</p>
+
+      <a href="{% url 'add_questions' active_survey.id %}" class="btn btn-primary mb-2">
+        Continue Editing
+      </a>
+      
+
+      <p class="text-muted mb-0">
+        Or, if you want to start a completely new survey, use the form below:
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="card p-4 shadow-sm">
+    <h4>Start a New Survey</h4>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-success">Create New Survey</button>
+    </form>
+  </div>
+  {% if all_surveys %}
+  <div class="mt-4">
+    <h5>All Surveys</h5>
+    <ul class="list-group">
+      {% for survey in all_surveys %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ survey.title }}</strong><br>
+            {{ survey.description }}
+          </div>
+          <div>
+            <a href="{% url 'add_questions' survey.id %}" class="btn btn-sm btn-primary">Edit</a>
+            <a href="{% url 'review_questions' survey.id %}" class="btn btn-sm btn-info">Review</a>
+            <a href="{% url 'delete_survey' survey.id %}" class="btn btn-sm btn-danger"
+               onclick="return confirm('Are you sure you want to delete this survey?');">Delete</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+</div>
+{% endblock %}

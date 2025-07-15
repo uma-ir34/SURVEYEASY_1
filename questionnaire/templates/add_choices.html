@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Add Choices{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow">
+  <h3>Add Choices to: {{ question.text }}</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ choice_form.as_p }}
+    <button type="submit" class="btn btn-primary">Add Another Choice</button>
+  </form>
+  <a href="{% url 'add_questions' question.survey.id %}" class="btn btn-link mt-3">Back to Questions</a>
+</div>
+{% endblock %}

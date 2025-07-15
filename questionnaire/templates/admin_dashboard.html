@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard | SurveyEasy{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow">
+  <h2 class="text-center mb-4">👑 Admin Dashboard</h2>
+
+  <p class="text-center">Welcome Admin! Choose your actions below:</p>
+
+  <ul class="list-group mb-4">
+    <li class="list-group-item">
+      <a href="{% url 'create_survey' %}" class="text-decoration-none">➕ Create New Survey</a>
+    </li>
+    <li class="list-group-item">
+      <a href="{% url 'survey_list' %}" class="text-decoration-none">📋 View & Manage Surveys</a>
+    </li>
+    <li class="list-group-item">
+      <a href="{% url 'response_list' %}" class="text-decoration-none">📑 View All Responses</a>
+    </li>
+    <li class="list-group-item">
+      <a href="/admin/" class="text-decoration-none">🛠️ Go to Django Admin</a>
+    </li>
+    <li class="list-group-item">
+      <a href="{% url 'change_password' %}" class="text-decoration-none">🔑 Change Your Password</a>
+    </li>
+    <li class="list-group-item">
+      <a href="{% url 'ml_model_runner' %}" class="text-decoration-none">📊 Run ML Model</a>
+    </li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>All Survey Responses</h3>
+
+{% if user.groups.all.0.name == "Admin" %}
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-2">⬅️ Back to Dashboard</a>
+{% elif user.groups.all.0.name == "Assessor" %}
+  <a href="{% url 'assessor_dashboard' %}" class="btn btn-secondary mb-2">⬅️ Back to Dashboard</a>
+{% endif %}
+
+<!-- ✅ New: Dropdown to select which survey to download -->
+<form method="get" action="{% url 'response_list' %}" class="mb-3">
+  <div class="input-group">
+    <select name="survey_id" class="form-select" required>
+      <option value="">-- Select Survey to Download --</option>
+      {% for s in surveys %}
+        <option value="{{ s.id }}">{{ s.title }}</option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="export" value="excel">
+    <button class="btn btn-success" type="submit">📥 Download Selected Survey</button>
+  </div>
+</form>
+
+<!-- ✅ Existing table, but now includes survey column -->
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Survey</th>
+        <th>Participant</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for resp in responses %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ resp.survey.title }}</td>
+          <td>{{ resp.participant.name }}</td>
+          <td>{{ resp.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            <a href="{% url 'response_detail' resp.id %}" class="btn btn-sm btn-primary">View</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" class="text-center">No responses found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+
+
+{% block title %}Run Survey{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow">
+  <h3>{{ survey.title }}</h3>
+  <p>{{ survey.description }}</p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <h5>Participant Info</h5>
+    <div class="mb-3"><label>Name</label><input type="text" name="name" class="form-control" required></div>
+    <div class="mb-3"><label>Location</label><input type="text" name="location" class="form-control" required></div>
+    <div class="mb-3"><label>Age</label><input type="number" name="age" class="form-control" required></div>
+    <div class="mb-3"><label>Parity</label><input type="number" name="parity" class="form-control" required></div>
+    <!-- Add other fields as needed -->
+
+    <h5>Survey Questions</h5>
+    {% for question in questions %}
+      <div class="mb-3">
+        <label><strong>{{ question.text }}</strong></label>
+        {% if question.question_type == 'text' %}
+          <input type="text" name="question_{{ question.id }}" class="form-control" required>
+        {% elif question.question_type == 'radio' %}
+          {% for choice in question.choices.all %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="{{ choice.id }}">
+              <label class="form-check-label">{{ choice.text }}</label>
+            </div>
+          {% endfor %}
+        {% elif question.question_type == 'checkbox' %}
+          {% for choice in question.choices.all %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="question_{{ question.id }}" value="{{ choice.id }}">
+              <label class="form-check-label">{{ choice.text }}</label>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-success">Submit Survey</button>
+  </form>
+</div>
+{% endblock %}

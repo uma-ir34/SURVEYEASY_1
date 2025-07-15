@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card p-4 shadow">
+  <h3>Response by {{ participant.name }}</h3>
+  <p><strong>Location:</strong> {{ participant.location }}</p>
+  <p><strong>Age:</strong> {{ participant.age }}</p>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th>Answer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ans in answers %}
+      <tr>
+        <td>{{ ans.question.text }}</td>
+        <td>
+          {% if ans.choice %}
+            {{ ans.choice.text }}
+          {% else %}
+            {{ ans.answer_text }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  
+  <!-- ✅ Back button -->
+  <a href="{% url 'response_list' %}" class="btn btn-secondary">⬅️ Back to Responses</a>
+<a href="?export=excel" class="btn btn-success mb-2">📥 Download as Excel</a>
+  
+</div>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('export')) {
+    alert('✅ Download Done!');
+  }
+</script>
+{% endblock %}

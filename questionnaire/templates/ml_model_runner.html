@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card p-4 shadow mb-4">
+  <h3>📊 Run Machine Learning Models</h3>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-group mb-3">
+      <label for="data_file">📁 Upload Dataset (CSV/XLSX)</label>
+      <input type="file" name="data_file" class="form-control" {% if not preview and not result %}required{% endif %}>
+      <small class="text-muted">* File is kept after preview — you don’t need to re-upload.</small>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="target_column">🎯 Target Column Name</label>
+      {{ form.target_column }}
+    </div>
+
+    <h5>📌 Select Model to Run:</h5>
+
+    <div class="card mb-2 p-3">
+      <input type="radio" name="model_type" value="classification" required>
+      <strong>Classification Model</strong>
+      <p>Predicts categories (e.g., Healthy vs Unhealthy). Uses Logistic Regression.</p>
+      <p><em>Example: Predict if a person has constipation based on lifestyle factors.</em></p>
+    </div>
+
+    <div class="card mb-2 p-3">
+      <input type="radio" name="model_type" value="regression">
+      <strong>Regression Model</strong>
+      <p>Predicts continuous numbers. Uses Linear Regression.</p>
+      <p><em>Example: Predict how many days between bowel movements based on diet data.</em></p>
+    </div>
+
+    <div class="card mb-2 p-3">
+      <input type="radio" name="model_type" value="knn">
+      <strong>KNN Classifier</strong>
+      <p>Predicts categories based on nearest neighbors. Good for simple datasets.</p>
+      <p><em>Example: Predict risk level by comparing with similar individuals.</em></p>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="export_report" id="exportReport">
+      <label class="form-check-label" for="exportReport">
+        📥 Download Report as PDF
+      </label>
+    </div>
+
+    <button type="submit" name="action" value="preview" class="btn btn-info">👀 Preview Data</button>
+    <button type="submit" name="action" value="run_model" class="btn btn-primary">🚀 Run Selected Model</button>
+
+    {% if user.groups.all.0.name == "Admin" %}
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mb-2">⬅️ Back to Dashboard</a>
+    {% elif user.groups.all.0.name == "Assessor" %}
+      <a href="{% url 'assessor_dashboard' %}" class="btn btn-secondary mb-2">⬅️ Back to Dashboard</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if preview %}
+  <h5>📄 Data Preview:</h5>
+  <div class="table-responsive">
+    {{ preview|safe }}
+  </div>
+{% endif %}
+
+{% if result %}
+  <div class="alert alert-success">
+    <h5>✅ Model Output:</h5>
+    <pre>{{ result }}</pre>
+  </div>
+{% endif %}
+
+{% if predictions_table %}
+  <h5>🔢 Predictions (Sample):</h5>
+  <div class="table-responsive">
+    {{ predictions_table|safe }}
+  </div>
+{% endif %}
+
+{% if cm_image %}
+  <h5>🔵 Confusion Matrix:</h5>
+  <img src="data:image/png;base64,{{ cm_image }}" class="img-fluid mb-3">
+{% endif %}
+
+{% if balance_image %}
+  <h5>🟢 Class Balance Plot:</h5>
+  <img src="data:image/png;base64,{{ balance_image }}" class="img-fluid mb-3">
+{% endif %}
+
+{% if scatter_image %}
+  <h5>📈 Regression Scatter Plot:</h5>
+  <img src="data:image/png;base64,{{ scatter_image }}" class="img-fluid mb-3">
+{% endif %}
+
+{% if date_image %}
+  <h5>📅 Trend Plot:</h5>
+  <img src="data:image/png;base64,{{ date_image }}" class="img-fluid mb-3">
+{% endif %}
+
+{% if group_summary %}
+  <h5>📑 Group Summary:</h5>
+  <pre>{{ group_summary }}</pre>
+{% endif %}
+
+{% if model_description %}
+  <div class="alert alert-info">
+    {{ model_description|safe }}
+  </div>
+{% endif %}
+
+{% if error %}
+  <div class="alert alert-danger">
+    <h5>❌ Error:</h5>
+    <pre>{{ error }}</pre>
+  </div>
+{% endif %}
+
+{% endblock %}

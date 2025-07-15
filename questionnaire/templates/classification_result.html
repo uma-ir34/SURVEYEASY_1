@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Classification Report</title>
+</head>
+<body>
+    <h1>Classification Model Results</h1>
+    {% if report %}
+    <table border="1">
+        <tr>
+            <th>Label</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+        </tr>
+        {% for label, metrics in report.items %}
+            {% if label not in ['accuracy', 'macro avg', 'weighted avg'] %}
+            <tr>
+                <td>{{ label }}</td>
+                <td>{{ metrics.precision }}</td>
+                <td>{{ metrics.recall }}</td>
+                <td>{{ metrics.f1-score }}</td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No report generated.</p>
+    {% endif %}
+</body>
+</html>

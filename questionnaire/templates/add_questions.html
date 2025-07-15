@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-4">
+  <a href="{% url 'create_survey' %}" class="btn btn-secondary mb-3">⬅️ Back to Survey Builder</a>
+
+
+  <h2>Building Survey: {{ survey.title }}</h2>
+  <p><strong>Description:</strong> {{ survey.description }}</p>
+
+  <hr>
+<a href="{% url 'review_questions' survey.id %}" class="btn btn-warning mt-3">
+  Review & Arrange Questions
+</a>
+
+  <h4>Add New Question</h4>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label>Question Text:</label>
+      <input type="text" name="text" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label>Question Type:</label>
+      <select name="question_type" class="form-select" required>
+        <option value="text">Text</option>
+        <option value="number">Number</option>
+        <option value="date">Date</option>
+        <option value="radio">Single Choice</option>
+        <option value="checkbox">Multiple Choice</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label>Choices (for radio/checkbox only):</label>
+      <input type="text" name="choices" class="form-control" placeholder="Comma separated e.g. Yes,No,Maybe">
+    </div>
+    <button type="submit" class="btn btn-primary">Add Question</button>
+  </form>
+
+  <hr>
+
+  <h4>Current Questions:</h4>
+  {% if survey.questions.all %}
+    <ul class="list-group">
+      {% for q in survey.questions.all %}
+        <li class="list-group-item">
+          <strong>{{ q.text }}</strong>
+          ({{ q.get_question_type_display }})
+          {% if q.choices.all %}
+            <br>Choices:
+            <ul>
+              {% for c in q.choices.all %}
+                <li>{{ c.text }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <a href="{% url 'remove_question' q.id %}"
+             class="btn btn-sm btn-danger"
+             onclick="return confirm('Delete this question?');">
+             Remove
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No questions yet. Start adding some!</p>
+  {% endif %}
+
+</div>
+{% endblock %}

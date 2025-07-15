@@ -1,0 +1,42 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h2>Review & Arrange Questions for: {{ survey.title }}</h2>
+  <a href="{% url 'add_questions' survey.id %}" class="btn btn-secondary mb-3">⬅️ Back to Add Questions</a>
+
+
+
+  <form method="post">
+    {% csrf_token %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Type</th>
+          <th>Order</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in questions %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ q.text }}</td>
+          <td>{{ q.get_question_type_display }}</td>
+          <td>
+            <input type="number" name="order_{{ q.id }}" value="{{ q.question_order }}" class="form-control" />
+          </td>
+          <td>
+            <input type="checkbox" name="remove" value="{{ q.id }}">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">✅ Confirm & Save</button>
+  </form>
+</div>
+{% endblock %}
