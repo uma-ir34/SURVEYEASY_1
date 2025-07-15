@@ -1,99 +1,38 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import PasswordChangeForm
 from django.core.mail import send_mail
 from django.conf import settings
-from django.urls import reverse
 from django.utils.crypto import get_random_string
+from django.urls import reverse
 from django.http import HttpResponse
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash
 
 from .models import Participant, Question, Choice, Response, Answer, AssessorRequest, Survey
 from .forms import SurveyForm, ParticipantForm
-
-import openpyxl  
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
 from .ml_forms import MLModelForm
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, mean_squared_error
-from django.contrib.auth.decorators import login_required, user_passes_test
 from .ml_pipeline import preprocess_data, train_classification, train_regression, train_knn
-import os
-import tempfile
-import seaborn as sns
-import matplotlib.pyplot as plt
-from django.http import FileResponse, HttpResponse
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-import zipfile
-
-
-
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-from io import BytesIO
-import base64
-
-
-
-import matplotlib
-matplotlib.use('Agg')
-
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import (
-    accuracy_score,
-    mean_squared_error,
-    r2_score,
-    classification_report,
-    confusion_matrix
-)
-from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
-from sklearn.compose import ColumnTransformer
-import io
-import base64
 from .generate_report import generate_pdf_report
 
+import os
+import pandas as pd
+import openpyxl
 
+
+# ✅ 1️⃣ --- MACHINE LEARNING RUNNER VIEW ---
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=['Admin', 'Assessor']).exists())
 def run_ml(request):
-    import os
-    import pandas as pd
-    from django.http import HttpResponse
-    from .ml_pipeline import preprocess_data, train_classification, train_regression, train_knn
-    from .generate_report import generate_pdf_report
-
-    result = None
-    error = None
-    preview = None
-    cm_image = None
-    balance_image = None
-    scatter_image = None
-    date_image = None
-    predictions_table = None
-    model_description = None
-    group_summary = None
+    result = error = preview = None
+    cm_image = balance_image = scatter_image = date_image = None
+    predictions_table = model_description = group_summary = None
 
     if request.method == 'POST':
         form = MLModelForm(request.POST, request.FILES)
         action = request.POST.get('action')
 
-        if form.is_valid() or 'action' in request.POST:
+        if form.is_valid() or action:
             uploaded_file = request.FILES.get('data_file')
             if uploaded_file:
                 request.session['uploaded_filename'] = uploaded_file.name
@@ -105,14 +44,7 @@ def run_ml(request):
                 file_path = f"/tmp/{request.session.get('uploaded_filename')}"
                 if not os.path.exists(file_path):
                     error = "No file found. Please upload a dataset."
-                    return render(request, 'ml_model_runner.html', {
-                        'form': form, 'result': result, 'error': error,
-                        'preview': preview, 'cm_image': cm_image, 'balance_image': balance_image,
-                        'scatter_image': scatter_image, 'date_image': date_image,
-                        'predictions_table': predictions_table,
-                        'model_description': model_description,
-                        'group_summary': group_summary,
-                    })
+                    return render(request, 'ml_model_runner.html', locals())
 
             target_column = form.cleaned_data.get('target_column')
             model_type = request.POST.get('model_type')
@@ -130,22 +62,19 @@ def run_ml(request):
                     X, y, encoders, preprocessor = preprocess_data(df, target_column)
 
                     if model_type == 'classification':
-                        acc, report, preds_df, cm_image, balance_image, group_summary = train_classification(
-                            df, X, y, target_column)
+                        acc, report, preds_df, cm_image, balance_image, group_summary = train_classification(df, X, y, target_column)
                         result = f"✅ Classification Accuracy: {acc:.2%}\n\n📄 Report:\n{report}"
                         predictions_table = preds_df.to_html()
                         model_description = "<p>Classification explanation here.</p>"
 
                     elif model_type == 'regression':
-                        mse, r2, preds_df, scatter_image, date_image = train_regression(
-                            df, X, y, date_col=None)
+                        mse, r2, preds_df, scatter_image, date_image = train_regression(df, X, y, date_col=None)
                         result = f"✅ Regression MSE: {mse:.2f} | R² Score: {r2:.2%}"
                         predictions_table = preds_df.to_html()
                         model_description = "<p>Regression explanation here.</p>"
 
                     elif model_type == 'knn':
-                        acc, report, preds_df, cm_image, balance_image, group_summary = train_knn(
-                            df, X, y, target_column)
+                        acc, report, preds_df, cm_image, balance_image, group_summary = train_knn(df, X, y, target_column)
                         result = f"✅ KNN Classification Accuracy: {acc:.2%}\n\n📄 Report:\n{report}"
                         predictions_table = preds_df.to_html()
                         model_description = "<p>KNN explanation here.</p>"
@@ -153,7 +82,6 @@ def run_ml(request):
                     else:
                         error = "Please select a valid model type."
 
-                    # ✅ Immediately return PDF for download
                     if 'export_report' in request.POST:
                         pdf_buffer = generate_pdf_report(
                             title='ML Report',
@@ -185,141 +113,94 @@ def run_ml(request):
     else:
         form = MLModelForm()
 
-    return render(request, 'ml_model_runner.html', {
-        'form': form,
-        'result': result,
-        'error': error,
-        'preview': preview,
-        'cm_image': cm_image,
-        'balance_image': balance_image,
-        'scatter_image': scatter_image,
-        'date_image': date_image,
-        'predictions_table': predictions_table,
-        'model_description': model_description,
-        'group_summary': group_summary,
-    })
+    return render(request, 'ml_model_runner.html', locals())
 
 
-
-
-
+# ✅ 2️⃣ --- EXPORT ALL RESPONSES ---
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=['Admin', 'Assessor']).exists())
 def export_all_responses(request, survey_id):
     survey = get_object_or_404(Survey, id=survey_id)
-
-    responses = Response.objects.filter(
-        answers__question__survey=survey
-    ).distinct()
-
-    import openpyxl
-    from openpyxl.utils import get_column_letter
+    responses = Response.objects.filter(answers__question__survey=survey).distinct()
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Survey_{survey.id}_Responses"
-
-    # Header
     ws.append(['Participant Name', 'Location', 'Age', 'Question', 'Answer'])
-
-    row = 2  # start from row 2, because header is row 1
 
     for response in responses:
         participant = response.participant
         answers = response.answers.select_related('question', 'choice')
-
         first = True
         for ans in answers:
             if ans.question.survey_id == survey.id:
                 answer_value = ans.answer_text or (ans.choice.text if ans.choice else '')
-                if first:
-                    ws.append([
-                        participant.name,
-                        participant.location,
-                        participant.age,
-                        ans.question.text,
-                        answer_value
-                    ])
-                    first = False
-                else:
-                    ws.append([
-                        '', '', '',
-                        ans.question.text,
-                        answer_value
-                    ])
-            row += 1
-
-        # add a blank row between participants for clarity
+                row = [
+                    participant.name if first else '',
+                    participant.location if first else '',
+                    participant.age if first else '',
+                    ans.question.text,
+                    answer_value
+                ]
+                ws.append(row)
+                first = False
         ws.append([])
 
     response_excel = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    filename = f"Survey_{survey.id}_All_Responses.xlsx"
-    response_excel['Content-Disposition'] = f'attachment; filename={filename}'
+    response_excel['Content-Disposition'] = f'attachment; filename=Survey_{survey.id}_All_Responses.xlsx'
     wb.save(response_excel)
     return response_excel
 
+
+# ✅ 3️⃣ --- RESPONSE LIST + EXPORT ---
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=['Admin', 'Assessor']).exists())
 def response_list(request):
-    from .models import Survey, Response
-
     responses = Response.objects.select_related('participant', 'survey').order_by('survey__id', 'created_at')
     surveys = Survey.objects.all()
 
     if request.GET.get('export') == 'excel':
         selected_survey_id = request.GET.get('survey_id')
-        import openpyxl
-        from django.http import HttpResponse
-
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
 
         if selected_survey_id:
-            try:
-                survey = Survey.objects.get(id=selected_survey_id)
-                ws = wb.create_sheet(title=survey.title[:31])
-                ws.append(['Participant Name', 'Location', 'Age', 'Question', 'Answer'])
-
-                survey_responses = responses.filter(survey=survey)
-                for resp in survey_responses:
-                    p = resp.participant
-                    answers = resp.answers.select_related('question', 'choice')
-                    first = True
-                    for ans in answers:
-                        row = [
-                            p.name if first else '',
-                            p.location if first else '',
-                            p.age if first else '',
-                            ans.question.text,
-                            ans.answer_text or (ans.choice.text if ans.choice else '')
-                        ]
-                        ws.append(row)
-                        first = False
-
-            except Survey.DoesNotExist:
-                pass
-
+            survey = get_object_or_404(Survey, id=selected_survey_id)
+            ws = wb.create_sheet(title=survey.title[:31])
+            ws.append(['Participant Name', 'Location', 'Age', 'Question', 'Answer'])
+            survey_responses = responses.filter(survey=survey)
+            for resp in survey_responses:
+                p = resp.participant
+                answers = resp.answers.select_related('question', 'choice')
+                first = True
+                for ans in answers:
+                    ws.append([
+                        p.name if first else '',
+                        p.location if first else '',
+                        p.age if first else '',
+                        ans.question.text,
+                        ans.answer_text or (ans.choice.text if ans.choice else '')
+                    ])
+                    first = False
         else:
             for survey in surveys:
                 ws = wb.create_sheet(title=survey.title[:31])
                 ws.append(['Participant Name', 'Location', 'Age', 'Question', 'Answer'])
-
                 survey_responses = responses.filter(survey=survey)
                 for resp in survey_responses:
                     p = resp.participant
                     answers = resp.answers.select_related('question', 'choice')
                     first = True
                     for ans in answers:
-                        row = [
+                        ws.append([
                             p.name if first else '',
                             p.location if first else '',
                             p.age if first else '',
                             ans.question.text,
                             ans.answer_text or (ans.choice.text if ans.choice else '')
-                        ]
-                        ws.append(row)
+                        ])
                         first = False
 
         response_excel = HttpResponse(
@@ -329,21 +210,54 @@ def response_list(request):
         wb.save(response_excel)
         return response_excel
 
-    return render(request, 'response_list.html', {
-        'responses': responses,
-        'surveys': surveys,
+    return render(request, 'response_list.html', locals())
+
+
+# ✅ 4️⃣ --- INDIVIDUAL RESPONSE EXPORT ---
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name__in=['Admin', 'Assessor']).exists())
+def response_detail(request, response_id):
+    response = get_object_or_404(Response.objects.select_related('participant'), id=response_id)
+    answers = response.answers.select_related('question', 'choice')
+    participant = response.participant
+
+    if request.GET.get('export') == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Response_{response.id}"
+
+        ws.append(['Participant Name', participant.name])
+        ws.append(['Location', participant.location])
+        ws.append(['Age', participant.age])
+        ws.append(['Survey', response.survey.title if response.survey else 'N/A'])
+        ws.append([])
+        ws.append(['Question', 'Answer'])
+
+        for ans in answers:
+            answer_value = ans.answer_text or (ans.choice.text if ans.choice else '')
+            ws.append([ans.question.text, answer_value])
+
+        response_excel = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f"SurveyResponse_{participant.name}_{response.id}.xlsx"
+        response_excel['Content-Disposition'] = f'attachment; filename={filename}'
+        wb.save(response_excel)
+        return response_excel
+
+    return render(request, 'response_detail.html', {
+        'response': response,
+        'answers': answers,
+        'participant': participant,
     })
 
 
-
-
-
-
-# ✅ DASHBOARDS
+# ✅ 5️⃣ --- DASHBOARDS ---
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='Admin').exists())
 def admin_dashboard(request):
     return render(request, 'admin_dashboard.html')
+
 
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='Assessor').exists())
