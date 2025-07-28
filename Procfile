@@ -1,1 +1,1 @@
-echo "web: gunicorn surveyeasy.wsgi:application" > Procfile
+web: gunicorn SurveyEasyApp.wsgi
