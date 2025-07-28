@@ -117,41 +117,68 @@ def run_ml(request):
 
 
 # ✅ 2️⃣ --- EXPORT ALL RESPONSES ---
+from collections import defaultdict
+from django.db.models import Prefetch
+
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=['Admin', 'Assessor']).exists())
 def export_all_responses(request, survey_id):
+    import openpyxl
+    from django.http import HttpResponse
+    from openpyxl.utils import get_column_letter
+
     survey = get_object_or_404(Survey, id=survey_id)
-    responses = Response.objects.filter(answers__question__survey=survey).distinct()
+    questions = survey.questions.all()
+    question_texts = [q.text for q in questions]
+    question_map = {q.id: q.text for q in questions}
+
+    responses = Response.objects.filter(answers__question__survey=survey).prefetch_related(
+        Prefetch('answers', queryset=Answer.objects.select_related('question', 'choice'))
+    ).distinct()
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Survey_{survey.id}_Responses"
-    ws.append(['Participant Name', 'Location', 'Age', 'Question', 'Answer'])
+
+    # Header row
+    headers = ['Participant Name', 'Location', 'Age'] + question_texts
+    ws.append(headers)
 
     for response in responses:
         participant = response.participant
-        answers = response.answers.select_related('question', 'choice')
-        first = True
-        for ans in answers:
-            if ans.question.survey_id == survey.id:
-                answer_value = ans.answer_text or (ans.choice.text if ans.choice else '')
-                row = [
-                    participant.name if first else '',
-                    participant.location if first else '',
-                    participant.age if first else '',
-                    ans.question.text,
-                    answer_value
-                ]
-                ws.append(row)
-                first = False
-        ws.append([])
 
+        # Collect answers per question ID
+        answers_dict = defaultdict(list)
+        for ans in response.answers.all():
+            if ans.question.survey_id != survey.id:
+                continue
+            if ans.answer_text:
+                answers_dict[ans.question_id].append(ans.answer_text)
+            elif ans.choice:
+                answers_dict[ans.question_id].append(ans.choice.text)
+
+        # Build row in the same order as questions
+        row = [
+            participant.name,
+            participant.location,
+            participant.age,
+        ]
+        for q in questions:
+            combined = ", ".join(answers_dict.get(q.id, []))
+            row.append(combined)
+
+        ws.append(row)
+
+    # Return as Excel file
     response_excel = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response_excel['Content-Disposition'] = f'attachment; filename=Survey_{survey.id}_All_Responses.xlsx'
+    response_excel['Content-Disposition'] = f'attachment; filename=Survey_{survey.id}_All_Responses_Wide.xlsx'
     wb.save(response_excel)
     return response_excel
+
+
+
 
 
 # ✅ 3️⃣ --- RESPONSE LIST + EXPORT ---

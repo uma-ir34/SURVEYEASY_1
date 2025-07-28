@@ -35,3 +35,6 @@ databases:
     plan: free
     databaseName: surveyeasy
     user: surveyeasy_user
+buildCommand: |
+  pip install -r requirements.txt
+  python manage.py collectstatic --noinput
